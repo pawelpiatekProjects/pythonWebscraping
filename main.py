@@ -3,6 +3,8 @@ from requests import get
 import csv
 from models.Flat import Flat
 
+# TODO: Dodać warunki przy filtrowaniu
+
 # Mieszkania w katowicach w apartamentowcach pod wynajem w serwisie olx.pl
 URL = 'https://www.olx.pl/nieruchomosci/mieszkania/wynajem/katowice/?search%5Bfilter_enum_builttype%5D%5B0%5D=apartamentowiec'
 
@@ -102,21 +104,25 @@ with open('outputs/flats_list.csv', 'w') as f:
 # HTML
 
 testStr = ''
-for x in data:
+for x in flatsList:
     # testStr = testStr + x
-    for y in x:
-        if 'http' in y:
-            testStr = testStr + f'''<a href="{y}"> {y} </a>'''
-        else:
-            testStr = testStr + '<p>' + y + '</p>'
-    testStr = testStr + '<hr>'
-
-print(testStr)
+    testStr = testStr + '<div style="background-color: #eeeeee; padding: 30px; margin-bottom: 20px">'
+    testStr = testStr + '<h3>' + x.title + '</h3>'
+    testStr = testStr + '<ul>'
+    testStr = testStr + '<li>' + '<p><b>Location: </b>' + x.location + '</p></li>'
+    testStr = testStr + '<li>' + '<p><b>Website: </b>' + x.website + '</p></li>'
+    testStr = testStr + '<li>' + '<p><b>Building type: </b>' + x.buildingType + '</p></li>'
+    testStr = testStr + '<li>' + '<p><b>Number of rooms: </b>' + x.rooms + '</p></li>'
+    testStr = testStr + '<li>' + '<p><b>Price (zł): </b>' + x.price + '</p></li>'
+    testStr = testStr + '<li>' + '<p><b>Area (m2): </b>' + x.area + '</p></li>'
+    testStr = testStr + '<li>' + f'<b>Link: </b><a href={x.link}>' + x.title + '<a/></li>'
+    testStr = testStr + '</ul>'
+    testStr = testStr + '</div>'
 
 text = f'''
     <html>
         <body>
-            <div>
+            <div style="padding: 30px">
                 {testStr}
             </div>
         </body>
