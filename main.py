@@ -1,8 +1,7 @@
 from bs4 import BeautifulSoup
 from requests import get
-import json
-import pickle
 import csv
+from models.Flat import Flat
 
 # Mieszkania w katowicach w apartamentowcach pod wynajem w serwisie olx.pl
 URL = 'https://www.olx.pl/nieruchomosci/mieszkania/wynajem/katowice/?search%5Bfilter_enum_builttype%5D%5B0%5D=apartamentowiec'
@@ -10,24 +9,6 @@ URL = 'https://www.olx.pl/nieruchomosci/mieszkania/wynajem/katowice/?search%5Bfi
 
 def parse_price(price):
     return float(price.replace(' ', '').replace('zł', '').replace(',', '.'))
-
-class Flat:
-    def __init__(self, title, location, website, buildingType, rooms, price, area, description, link):
-        self.title = title
-        self.location = location
-        self.website = website
-        self.buildingType = buildingType
-        self.rooms = rooms
-        self.price = price
-        self.area = area
-        self.description = description
-        self.link = link
-
-    def print_values(self):
-        print(self.title + '; ' + self.location + '; ' + self.website + '; ' + self.buildingType + '; ' + self.rooms + '; ' + self.price + '; ' + self.area + '; ' + self.description + '; ' + self.link)
-
-    def get_link(self):
-        return f'{self.link}'
 
 
 page = get(URL)
@@ -70,7 +51,6 @@ for offer in bs.find_all('div', class_='offer-wrapper'):
 
         # Description
         description = bsFlat.find('div', id='textContent').get_text().strip()
-
         flat = Flat(title, location, 'OLX', buildingType, rooms, str(price), area, description, linkString)
 
 
@@ -103,53 +83,50 @@ for offer in bs.find_all('div', class_='offer-wrapper'):
 
     flatsList.append(flat)
 
-# jsonString = json.dumps(flatsList)
-# print(jsonString)
-
-
-
 data = []
 
-# for x in flatsList:
-#     data.append({
-#         'title': x.title,
-#         'location': x.location,
-#         'website': x.website,
-#         'buildingType': x.buildingType,
-#         'rooms': x.rooms,
-#         'price': x.price,
-#         'area': x.area,
-#         'description': x.description,
-#         'link': x.link
-#     })
-
+# Przekszatałcanie do zaoisywania do pliku .csv
 for x in flatsList:
-    # data.append([str(x.title), str(x.location), str(x.website), str(x.buildingType), str(x.rooms), str(x.price), str(x.area), str(x.description), str(x.link)])
     data.append([str(x.title), str(x.location), str(x.website), str(x.buildingType), str(x.rooms), str(x.price), str(x.area), str(x.link)])
-    # data.append(['aaa', 'bbb', 'ccc', 'ddd', 'eee', 'fff', 'ggg', 'hhh', 'iii'])
 
-# for x in data:
-#     print(x)
-#
-#     print('-----------')
 
-# Serialize csv
+# Serializowanie do pliku csv
 header = ['title', 'location', 'website (platform)', 'buildingType', 'rooms', 'price (zł)', 'area (m2)', 'link']
 
-with open('flats_list.csv', 'w') as f:
+# Zapisywanie do csv z ';' jako separator
+with open('outputs/flats_list.csv', 'w') as f:
     write = csv.writer(f, delimiter=";")
     write.writerow(header)
     write.writerows(data)
 
-# Serialize pickle
-# filename = 'test'
-# outfile = open(filename, 'wb')
-# pickle.dump(data, outfile)
-# outfile.close()
+# HTML
 
-# for x in flatsList:
-#     # x.print_values()
-#     print(x)
-#     print('--------------------------')
+testStr = ''
+for x in data:
+    # testStr = testStr + x
+    for y in x:
+        if 'http' in y:
+            testStr = testStr + f'''<a href="{y}"> {y} </a>'''
+        else:
+            testStr = testStr + '<p>' + y + '</p>'
+    testStr = testStr + '<hr>'
+
+print(testStr)
+
+text = f'''
+    <html>
+        <body>
+            <div>
+                {testStr}
+            </div>
+        </body>
+    </html>
+'''
+
+with open('outputs/data.html', 'w') as f:
+    f.write(text)
+    f.close()
+
+
 
 
