@@ -9,8 +9,7 @@ import sys
 import smtplib
 from models.Flat import Flat
 from Serialization import Serialization
-from email.message import EmailMessage
-from email.mime.application import MIMEApplication
+
 
 # TODO: Dodać warunki przy filtrowaniu
 
@@ -38,11 +37,12 @@ def say_hello():
 
 def send_email():
     if os.path.exists('outputs/flats_list.csv'):
+        from_email = 'olx.webscraping.bot@gmail.com'
+        to_email = 'pawel.piatek2@edu.uekat.pl'
         msg = MIMEMultipart()
         msg['Subject'] = 'OLX Flats'
-        msg['From'] = 'olx.webscraping.bot@gmail.com'
-        msg['To'] = 'pawel.piatek2@edu.uekat.pl'
-        # msg.set_content('Message which contains new flats offers from Olx.pl')
+        msg['From'] = from_email
+        msg['To'] = to_email
 
         sender_email = 'olx.webscraping.bot@gmail.com'
         password = 'webscraping1#'
@@ -52,17 +52,16 @@ def send_email():
         encoders.encode_base64(part)
         part.add_header('Content-Disposition', 'attachment', filename="flats_list.csv")
 
-        # with open('outputs/data.html', 'rb') as f:
-        #     file_data = f.read()
-
         msg.attach(part)
 
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.ehlo()
         server.starttls()
         server.login(sender_email, password)
-        server.sendmail('olx.webscraping.bot@gmail.com', 'pawel.piatek2@edu.uekat.pl', msg.as_string())
+        server.sendmail(from_email, to_email, msg.as_string())
         server.quit()
+
+        print("SENT EMAIL TO: ", to_email)
 
 
 
@@ -85,8 +84,6 @@ print("\n")
 
 index = 0
 for offer in bs.find_all('div', class_='offer-wrapper'):
-
-
 
     footer = offer.find('td', class_='bottom-cell')
     # strip() - usuwa znaki konca linii
