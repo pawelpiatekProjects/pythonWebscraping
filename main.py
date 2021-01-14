@@ -1,12 +1,16 @@
+from email import encoders
+from email.mime.base import MIMEBase
+from email.mime.multipart import MIMEMultipart
+
 from bs4 import BeautifulSoup
 from requests import get
 import os
 import sys
-import time
+import smtplib
 from models.Flat import Flat
 from Serialization import Serialization
-
-
+from email.message import EmailMessage
+from email.mime.application import MIMEApplication
 
 # TODO: Dodać warunki przy filtrowaniu
 
@@ -16,6 +20,7 @@ priceMax = 1700
 htmlPath = "outputs/data.html"
 csvPath = "outputs/flats_list.csv"
 clear = lambda: os.system('cls')
+
 
 
 def parse_price(price):
@@ -30,6 +35,35 @@ def say_hello():
     print("###############################")
     print("# OLX Webscraping Application #")
     print("###############################")
+
+def send_email():
+    if os.path.exists('outputs/flats_list.csv'):
+        msg = MIMEMultipart()
+        msg['Subject'] = 'OLX Flats'
+        msg['From'] = 'olx.webscraping.bot@gmail.com'
+        msg['To'] = 'pawel.piatek2@edu.uekat.pl'
+        # msg.set_content('Message which contains new flats offers from Olx.pl')
+
+        sender_email = 'olx.webscraping.bot@gmail.com'
+        password = 'webscraping1#'
+
+        part = MIMEBase('application', "octet-stream")
+        part.set_payload(open('outputs/flats_list.csv', "rb").read())
+        encoders.encode_base64(part)
+        part.add_header('Content-Disposition', 'attachment', filename="flats_list.csv")
+
+        # with open('outputs/data.html', 'rb') as f:
+        #     file_data = f.read()
+
+        msg.attach(part)
+
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.ehlo()
+        server.starttls()
+        server.login(sender_email, password)
+        server.sendmail('olx.webscraping.bot@gmail.com', 'pawel.piatek2@edu.uekat.pl', msg.as_string())
+        server.quit()
+
 
 
 page = get(URL)
@@ -105,6 +139,8 @@ print("GENERATED .csv FILE")
 # Tworzenie pliku html z danymi
 Serialization.serialize_to_html(flatsList)
 print("GENERATED .html FILE")
+
+send_email()
 
 
 
