@@ -1,6 +1,6 @@
 from bs4 import BeautifulSoup
 from requests import get
-import csv
+import os
 from models.Flat import Flat
 from Serialization import Serialization
 
@@ -8,6 +8,9 @@ from Serialization import Serialization
 
 # Mieszkania w katowicach w apartamentowcach pod wynajem w serwisie olx.pl
 URL = 'https://www.olx.pl/nieruchomosci/mieszkania/wynajem/katowice/?search%5Bfilter_enum_builttype%5D%5B0%5D=apartamentowiec'
+priceMax = 1700
+htmlPath = "outputs/data.html"
+csvPath = "outputs/flats_list.csv"
 
 
 def parse_price(price):
@@ -17,6 +20,12 @@ def parse_price(price):
 page = get(URL)
 bs = BeautifulSoup(page.content, 'html.parser')
 flatsList = []
+
+if os.path.exists(htmlPath):
+    os.remove(htmlPath)
+
+if os.path.exists(csvPath):
+    os.remove(csvPath)
 
 for offer in bs.find_all('div', class_='offer-wrapper'):
 
@@ -34,6 +43,7 @@ for offer in bs.find_all('div', class_='offer-wrapper'):
     # print(location, ' ', title, ' ', price)
     linkString = str(link['href'])
     if 'olx' in linkString:
+
         flatPage = get(linkString)
         bsFlat = BeautifulSoup(flatPage.content, 'html.parser')
         offerContent = bsFlat.find('div', class_='descriptioncontent')
@@ -56,43 +66,17 @@ for offer in bs.find_all('div', class_='offer-wrapper'):
         description = bsFlat.find('div', id='textContent').get_text().strip()
         flat = Flat(title, location, 'OLX', buildingType, rooms, str(price), area, description, linkString)
 
-
-    else:
-        flatPage = get(linkString)
-        bsFlat = BeautifulSoup(flatPage.content, 'html.parser')
-        offerContent = bsFlat.find('div', class_='css-2wxlkt')
-
-        # Flat details
-        for detail in offerContent.find_all('div', class_='css-11ic80g'):
-            itemName = detail.find('div', class_='css-152vbi8').get_text().strip()
-            itemContent = detail.find('div', class_='css-1s5nyln').get_text().strip()
-            if itemName == 'Rodzaj zabudowy:':
-                buildingType = itemContent
-
-            if itemName == 'Powierzchnia:':
-                area = itemContent.split(' ')[0]
-
-            if itemName == 'Liczba pokoi:':
-                rooms = itemContent
-
-        # Flat description
-        description = bsFlat.find('section', class_='css-2kt7ta')
-        descriptionContent = description.find('div')
-        descriptionText = ''
-        for descriptionRow in descriptionContent.find_all('p'):
-            descriptionText = descriptionText + descriptionRow.get_text().strip()
-
-        flat = Flat(title, location, 'OTODOM', buildingType, rooms, str(price), area, descriptionText, linkString)
-
-    flatsList.append(flat)
+    if float(flat.price) <= priceMax:
+        flatsList.append(flat)
 
 # Tworzenie pliku csv z danymi
 Serialization.serialize_to_csv(flatsList)
+print("GENERATED .csv FILE")
 
 
 # Tworzenie pliku html z danymi
 Serialization.serialize_to_html(flatsList)
-
+print("GENERATED .html FILE")
 
 
 
