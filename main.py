@@ -21,20 +21,23 @@ csvPath = "outputs/flats_list.csv"
 clear = lambda: os.system('cls')
 
 
-
+# Parsowanie ceny ze strony
 def parse_price(price):
     return float(price.replace(' ', '').replace('zł', '').replace(',', '.'))
 
-def restart_line():
-    sys.stdout.write('\r')
-    sys.stdout.flush()
 
+# Funkcja służąca do wyświetlenia informacji o programie
 def say_hello():
     print("\n")
     print("###############################")
     print("# OLX Webscraping Application #")
     print("###############################")
+    print("\n")
+    print("[#    FETCHING DATA     #]")
+    print("\n")
 
+
+# Funkcja służąca do wysłania emaila
 def send_email():
     if os.path.exists('outputs/flats_list.csv'):
         from_email = 'olx.webscraping.bot@gmail.com'
@@ -50,8 +53,10 @@ def send_email():
         part = MIMEBase('application', "octet-stream")
         part.set_payload(open('outputs/flats_list.csv', "rb").read())
         encoders.encode_base64(part)
+
         part.add_header('Content-Disposition', 'attachment', filename="flats_list.csv")
 
+        # Dodanie pliku .csv z mieszkaniami jako załącznik
         msg.attach(part)
 
         server = smtplib.SMTP('smtp.gmail.com', 587)
@@ -64,25 +69,22 @@ def send_email():
         print("SENT EMAIL TO: ", to_email)
 
 
-
+# Pobranie zawartości strony
 page = get(URL)
 bs = BeautifulSoup(page.content, 'html.parser')
 flatsList = []
 
+# Sprawdzanie czy pliki istnieją, jeśli istnieją to zostają usunięte
 if os.path.exists(htmlPath):
     os.remove(htmlPath)
 
 if os.path.exists(csvPath):
     os.remove(csvPath)
 
+# Wyświetlenie informacji o programie
 say_hello()
 
-print("\n")
-print("[#    FETCHING DATA     #]")
-
-print("\n")
-
-index = 0
+# Przeszukiwanie ofert na OLX
 for offer in bs.find_all('div', class_='offer-wrapper'):
 
     footer = offer.find('td', class_='bottom-cell')
@@ -96,8 +98,9 @@ for offer in bs.find_all('div', class_='offer-wrapper'):
     area = ''
     rooms = ''
 
-    # print(location, ' ', title, ' ', price)
     linkString = str(link['href'])
+
+    # Dodawane są wyłączenie oferty z OLX (oferty z podtalu Otodom nie są dodawane)
     if 'olx' in linkString:
 
         flatPage = get(linkString)
@@ -122,11 +125,9 @@ for offer in bs.find_all('div', class_='offer-wrapper'):
         description = bsFlat.find('div', id='textContent').get_text().strip()
         flat = Flat(title, location, 'OLX', buildingType, rooms, str(price), area, description, linkString)
 
+    # Dodawane są tylko te eferty, które spełniają kryteria odnośnie ceny
     if float(flat.price) <= priceMax:
         flatsList.append(flat)
-    index += 1
-
-
 
 # Tworzenie pliku csv z danymi
 Serialization.serialize_to_csv(flatsList)
@@ -137,6 +138,7 @@ print("GENERATED .csv FILE")
 Serialization.serialize_to_html(flatsList)
 print("GENERATED .html FILE")
 
+# Wysyłanie e-mail
 send_email()
 
 
