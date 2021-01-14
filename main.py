@@ -1,8 +1,12 @@
 from bs4 import BeautifulSoup
 from requests import get
 import os
+import sys
+import time
 from models.Flat import Flat
 from Serialization import Serialization
+
+
 
 # TODO: Dodać warunki przy filtrowaniu
 
@@ -11,10 +15,21 @@ URL = 'https://www.olx.pl/nieruchomosci/mieszkania/wynajem/katowice/?search%5Bfi
 priceMax = 1700
 htmlPath = "outputs/data.html"
 csvPath = "outputs/flats_list.csv"
+clear = lambda: os.system('cls')
 
 
 def parse_price(price):
     return float(price.replace(' ', '').replace('zł', '').replace(',', '.'))
+
+def restart_line():
+    sys.stdout.write('\r')
+    sys.stdout.flush()
+
+def say_hello():
+    print("\n")
+    print("###############################")
+    print("# OLX Webscraping Application #")
+    print("###############################")
 
 
 page = get(URL)
@@ -27,7 +42,17 @@ if os.path.exists(htmlPath):
 if os.path.exists(csvPath):
     os.remove(csvPath)
 
+say_hello()
+
+print("\n")
+print("[#    FETCHING DATA     #]")
+
+print("\n")
+
+index = 0
 for offer in bs.find_all('div', class_='offer-wrapper'):
+
+
 
     footer = offer.find('td', class_='bottom-cell')
     # strip() - usuwa znaki konca linii
@@ -68,6 +93,9 @@ for offer in bs.find_all('div', class_='offer-wrapper'):
 
     if float(flat.price) <= priceMax:
         flatsList.append(flat)
+    index += 1
+
+
 
 # Tworzenie pliku csv z danymi
 Serialization.serialize_to_csv(flatsList)
